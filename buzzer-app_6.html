@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Buzzer App</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #1e1e2e;
+    --accent: #f0c040;
+    --accent2: #e05a2b;
+    --text: #f0ede8;
+    --muted: #6b6880;
+    --green: #3ddc84;
+    --red: #ff4f5e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Tajawal', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; height: 100vh; width: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── HOME ── */
+  #homeScreen {
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    background: var(--bg);
+    position: relative;
+  }
+  #homeScreen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(240,192,64,.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .home-logo {
+    font-size: 4rem;
+    font-weight: 900;
+    letter-spacing: -2px;
+    color: var(--accent);
+    text-shadow: 0 0 40px rgba(240,192,64,.4);
+    line-height: 1;
+  }
+  .home-sub { color: var(--muted); font-size: 1rem; }
+  .home-btns { display: flex; flex-direction: column; gap: 1rem; width: 80%; max-width: 300px; }
+  .home-btn {
+    padding: 1.2rem;
+    border-radius: 16px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s;
+    letter-spacing: .5px;
+  }
+  .home-btn:active { transform: scale(.96); }
+  .btn-admin {
+    background: var(--accent);
+    color: #111;
+    box-shadow: 0 4px 30px rgba(240,192,64,.35);
+  }
+  .btn-team {
+    background: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+  }
+
+  /* ── ADMIN ── */
+  #adminScreen { background: var(--surface); }
+  .admin-header {
+    padding: 1.2rem 1.2rem .8rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-title { font-size: 1.2rem; font-weight: 900; color: var(--accent); }
+  .back-btn {
+    background: none; border: none; color: var(--muted);
+    font-size: 1.4rem; cursor: pointer; padding: .3rem .5rem;
+  }
+
+  .admin-body { flex: 1; overflow-y: auto; padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem;
+  }
+  .card-label { font-size: .8rem; color: var(--muted); margin-bottom: .6rem; text-transform: uppercase; letter-spacing: 1px; }
+
+  .teams-row { display: flex; gap: .5rem; }
+  .team-count-btn {
+    flex: 1; padding: .7rem; border-radius: 10px;
+    background: var(--surface); border: 2px solid var(--border);
+    color: var(--text); font-family: 'Tajawal', sans-serif;
+    font-size: 1rem; font-weight: 700; cursor: pointer; transition: .15s;
+  }
+  .team-count-btn.selected { background: var(--accent); color: #111; border-color: var(--accent); }
+
+  .team-names { display: flex; flex-direction: column; gap: .6rem; margin-top: .8rem; }
+  .team-input {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-family: 'Tajawal', sans-serif; font-size: 1rem;
+    padding: .7rem 1rem; outline: none; text-align: right;
+    transition: border-color .15s;
+  }
+  .team-input:focus { border-color: var(--accent); }
+
+  .session-code {
+    font-size: 3rem; font-weight: 900; letter-spacing: 6px;
+    color: var(--accent); text-align: center; padding: .5rem 0;
+    text-shadow: 0 0 20px rgba(240,192,64,.3);
+  }
+  .code-hint { font-size: .8rem; color: var(--muted); text-align: center; }
+
+  .action-btn {
+    width: 100%; padding: 1rem; border-radius: 14px;
+    font-family: 'Tajawal', sans-serif; font-size: 1.1rem; font-weight: 700;
+    border: none; cursor: pointer; transition: .15s;
+  }
+  .action-btn:active { transform: scale(.97); }
+  .btn-start { background: var(--accent); color: #111; box-shadow: 0 4px 20px rgba(240,192,64,.3); }
+  .btn-reset { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+  .btn-go   { background: var(--green); color: #111; box-shadow: 0 4px 20px rgba(61,220,132,.3); }
+  .btn-stop { background: var(--red); color: #fff; }
+
+  /* results */
+  .results-list { display: flex; flex-direction: column; gap: .6rem; }
+  .result-item {
+    display: flex; align-items: center; gap: .8rem;
+    background: var(--surface); border-radius: 12px; padding: .8rem 1rem;
+    border: 1px solid var(--border); transition: border-color .3s;
+  }
+  .result-item.winner { border-color: var(--accent); background: rgba(240,192,64,.07); }
+  .rank { font-size: 1.2rem; width: 2rem; text-align: center; }
+  .team-name-res { flex: 1; font-weight: 700; }
+  .press-time { font-size: .8rem; color: var(--muted); direction: ltr; }
+  .diff-badge {
+    font-size: .75rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: .2rem .6rem; color: var(--muted);
+  }
+  .waiting-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+  .waiting-dot.pressed { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  /* status badge */
+  .status-badge {
+    padding: .4rem .9rem; border-radius: 20px;
+    font-size: .8rem; font-weight: 700;
+    display: inline-block; margin-bottom: .5rem;
+  }
+  .badge-idle    { background: var(--surface); color: var(--muted); }
+  .badge-live    { background: rgba(61,220,132,.15); color: var(--green); }
+  .badge-done    { background: rgba(240,192,64,.15); color: var(--accent); }
+
+  /* ── TEAM SCREEN ── */
+  #teamScreen { background: var(--bg); }
+  .team-header {
+    padding: 1rem 1.2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .team-header-name { font-weight: 900; font-size: 1.1rem; color: var(--accent); }
+
+  .join-box {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 1.2rem; padding: 2rem;
+  }
+  .join-title { font-size: 1.4rem; font-weight: 900; }
+  .join-input {
+    width: 100%; max-width: 280px; text-align: center;
+    font-size: 2rem; letter-spacing: 8px; font-weight: 900;
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 14px; color: var(--text);
+    font-family: 'Tajawal', sans-serif; padding: .8rem;
+    outline: none; transition: border-color .15s;
+  }
+  .join-input:focus { border-color: var(--accent); }
+  .join-btn { width: 100%; max-width: 280px; }
+
+  .team-select-list { display: flex; flex-direction: column; gap: .6rem; width: 100%; max-width: 280px; }
+  .team-select-btn {
+    padding: .9rem; border-radius: 12px; font-family: 'Tajawal', sans-serif;
+    font-size: 1rem; font-weight: 700; border: 2px solid var(--border);
+    background: var(--surface); color: var(--text); cursor: pointer; transition: .15s;
+  }
+  .team-select-btn:active { transform: scale(.97); }
+  .team-select-btn.selected { border-color: var(--accent); background: rgba(240,192,64,.1); color: var(--accent); }
+
+  /* buzzer button */
+  .buzzer-wrap {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 1.5rem;
+    position: relative;
+  }
+  .buzzer-status {
+    font-size: 1rem; color: var(--muted);
+    margin-bottom: 2rem; text-align: center; line-height: 1.6;
+  }
+  .buzzer-btn {
+    width: min(70vw, 280px); height: min(70vw, 280px);
+    border-radius: 50%; border: none; cursor: pointer;
+    font-family: 'Tajawal', sans-serif; font-size: 1.6rem; font-weight: 900;
+    transition: transform .08s, box-shadow .08s;
+    position: relative; overflow: hidden;
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 0 0 12px rgba(255,79,94,.12), 0 0 0 24px rgba(255,79,94,.05), 0 8px 40px rgba(255,79,94,.4);
+    -webkit-user-select: none; user-select: none;
+    touch-action: none;
+  }
+  .buzzer-btn.ready {
+    background: var(--green);
+    box-shadow: 0 0 0 12px rgba(61,220,132,.12), 0 0 0 24px rgba(61,220,132,.05), 0 8px 40px rgba(61,220,132,.4);
+  }
+  .buzzer-btn.pressed-anim { transform: scale(.92); }
+  .buzzer-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .buzzer-btn.done-btn { background: var(--muted); box-shadow: none; }
+
+  .buzzer-result {
+    margin-top: 2rem; font-size: 1.1rem; font-weight: 700;
+    text-align: center; color: var(--accent);
+    opacity: 0; transition: opacity .4s;
+  }
+  .buzzer-result.show { opacity: 1; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 2rem; width: 90%; max-width: 320px;
+    text-align: center;
+  }
+  .modal-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .modal-title { font-size: 1.3rem; font-weight: 900; margin-bottom: .5rem; }
+  .modal-msg { color: var(--muted); font-size: .95rem; margin-bottom: 1.5rem; line-height: 1.6; }
+  .modal-btn { width: 100%; }
+
+  /* ── LOADER ── */
+  .loader-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,10,15,.85); align-items: center; justify-content: center; z-index: 200;
+  }
+  .loader-overlay.open { display: flex; }
+  .loader-ring {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 4px solid var(--border); border-top-color: var(--accent);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* confetti */
+  @keyframes fall {
+    0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+  .confetti-piece {
+    position: fixed; top: -10px; width: 8px; height: 14px;
+    pointer-events: none; z-index: 999;
+    animation: fall linear forwards;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════ HOME ════════ -->
+<div id="homeScreen" class="screen active">
+  <div class="home-logo">⚡ BUZZ</div>
+  <div class="home-sub">اختر دورك</div>
+  <div class="home-btns">
+    <button class="home-btn btn-admin" onclick="showAdmin()">🎛️ أدمن</button>
+    <button class="home-btn btn-team" onclick="showTeamJoin()">🎮 فريق</button>
+  </div>
+</div>
+
+<!-- ════════ ADMIN ════════ -->
+<div id="adminScreen" class="screen">
+  <div class="admin-header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="admin-title">⚡ لوحة الأدمن</div>
+    <div style="width:2rem"></div>
+  </div>
+  <div class="admin-body">
+
+    <!-- setup card -->
+    <div class="card" id="setupCard">
+      <div class="card-label">عدد الفرق</div>
+      <div class="teams-row">
+        <button class="team-count-btn selected" onclick="setTeamCount(2)">2 فرق</button>
+        <button class="team-count-btn" onclick="setTeamCount(3)">3 فرق</button>
+      </div>
+      <div class="team-names" id="teamNamesContainer"></div>
+      <div style="margin-top:1rem">
+        <button class="action-btn btn-start" onclick="createSession()">🚀 إنشاء جلسة</button>
+      </div>
+    </div>
+
+    <!-- session card (hidden until created) -->
+    <div class="card" id="sessionCard" style="display:none">
+      <div class="card-label">كود الجلسة — شاركه مع الفرق</div>
+      <div class="session-code" id="sessionCodeDisplay"></div>
+      <div class="code-hint">انتظر انضمام الفرق</div>
+      <div id="statusBadge" class="status-badge badge-idle" style="margin-top:.8rem">⏸ في الانتظار</div>
+    </div>
+
+    <!-- teams status -->
+    <div class="card" id="teamsCard" style="display:none">
+      <div class="card-label">حالة الفرق</div>
+      <div class="results-list" id="teamsStatusList"></div>
+    </div>
+
+    <!-- round controls -->
+    <div id="roundControls" style="display:none;flex-direction:column;gap:.8rem">
+      <button class="action-btn btn-go" id="startRoundBtn" onclick="startRound()">▶ ابدأ الجولة</button>
+      <button class="action-btn btn-stop" id="stopRoundBtn" onclick="resetRound()" style="display:none">🔄 إعادة تعيين الجولة</button>
+      <button class="action-btn btn-reset" onclick="endSession()">❌ إنهاء الجلسة</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════ TEAM ════════ -->
+<div id="teamScreen" class="screen">
+  <div class="team-header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="team-header-name" id="teamHeaderName">فريق</div>
+    <div style="width:2rem"></div>
+  </div>
+
+  <!-- join step -->
+  <div class="join-box" id="joinStep">
+    <div class="join-title">🔑 أدخل كود الجلسة</div>
+    <input class="join-input" id="codeInput" type="text" inputmode="numeric"
+           maxlength="4" placeholder="0000"
+           oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)">
+    <button class="action-btn btn-start join-btn" onclick="joinSession()">انضم للجلسة</button>
+  </div>
+
+  <!-- team select step -->
+  <div class="join-box" id="teamSelectStep" style="display:none">
+    <div class="join-title">اختر فريقك</div>
+    <div class="team-select-list" id="teamSelectList"></div>
+    <button class="action-btn btn-start join-btn" style="margin-top:.5rem" onclick="confirmTeam()">تأكيد</button>
+  </div>
+
+  <!-- buzzer step -->
+  <div class="buzzer-wrap" id="buzzerStep" style="display:none">
+    <div class="buzzer-status" id="buzzerStatus">في الانتظار...<br>الأدمن لسه ماجاش بدأ الجولة</div>
+    <button class="buzzer-btn" id="buzzerBtn" disabled ontouchstart="pressBuzzer()" onclick="pressBuzzer()">
+      اضغط!
+    </button>
+    <div class="buzzer-result" id="buzzerResult"></div>
+  </div>
+</div>
+
+<!-- ════════ MODAL ════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-icon" id="modalIcon">✅</div>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-msg" id="modalMsg"></div>
+    <button class="action-btn btn-start modal-btn" onclick="closeModal()">حسناً</button>
+  </div>
+</div>
+
+<!-- ════════ LOADER ════════ -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-ring"></div>
+</div>
+
+<script>
+/* ──────────────────────────────────────────
+   Firebase Config — hardcoded
+──────────────────────────────────────────── */
+const FB_URL = 'https://buzzer-app-b23b4-default-rtdb.firebaseio.com';
+
+/* ──────────────────────────────────────────
+   State
+──────────────────────────────────────────── */
+let teamCount = 2;
+let currentRole = null;          // 'admin' | 'team'
+let currentSession = null;       // session code string
+let currentTeamIndex = null;     // team index chosen by team player
+let roundActive = false;
+let alreadyPressed = false;
+let adminPollInterval = null;
+let teamPollInterval  = null;
+
+/* ──────────────────────────────────────────
+   Firebase REST helpers
+──────────────────────────────────────────── */
+async function fbGet(path) {
+  const r = await fetch(`${FB_URL}/${path}.json`);
+  return r.ok ? r.json() : null;
+}
+async function fbSet(path, data) {
+  await fetch(`${FB_URL}/${path}.json`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+}
+async function fbPatch(path, data) {
+  await fetch(`${FB_URL}/${path}.json`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+}
+async function fbDelete(path) {
+  await fetch(`${FB_URL}/${path}.json`, { method: 'DELETE' });
+}
+
+/* ──────────────────────────────────────────
+   UI helpers
+──────────────────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showLoader()  { document.getElementById('loader').classList.add('open'); }
+function hideLoader()  { document.getElementById('loader').classList.remove('open'); }
+function showModal(icon, title, msg) {
+  document.getElementById('modalIcon').textContent  = icon;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMsg').textContent   = msg;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+/* ──────────────────────────────────────────
+   URL HASH ROUTING
+──────────────────────────────────────────── */
+function handleHash() {
+  const hash = location.hash.toLowerCase();
+  if (hash === '#admin') { showAdmin(); }
+  else if (hash === '#team') { showTeamJoin(); }
+  else { showScreen('homeScreen'); }
+}
+window.addEventListener('hashchange', handleHash);
+window.addEventListener('DOMContentLoaded', handleHash);
+
+/* ──────────────────────────────────────────
+   HOME
+──────────────────────────────────────────── */
+function goHome() {
+  clearIntervals();
+  currentRole = currentSession = currentTeamIndex = null;
+  roundActive = alreadyPressed = false;
+  // reset admin UI
+  document.getElementById('setupCard').style.display  = '';
+  document.getElementById('sessionCard').style.display = 'none';
+  document.getElementById('teamsCard').style.display   = 'none';
+  document.getElementById('roundControls').style.display = 'none';
+  document.getElementById('startRoundBtn').style.display = '';
+  document.getElementById('stopRoundBtn').style.display  = 'none';
+  setTeamCount(2);
+  // reset team UI
+  document.getElementById('joinStep').style.display       = '';
+  document.getElementById('teamSelectStep').style.display  = 'none';
+  document.getElementById('buzzerStep').style.display      = 'none';
+  document.getElementById('codeInput').value = '';
+  history.pushState(null, '', location.pathname);
+  showScreen('homeScreen');
+}
+function clearIntervals() {
+  if (adminPollInterval) { clearInterval(adminPollInterval); adminPollInterval = null; }
+  if (teamPollInterval)  { clearInterval(teamPollInterval);  teamPollInterval  = null; }
+}
+
+/* ──────────────────────────────────────────
+   ADMIN — setup
+──────────────────────────────────────────── */
+function showAdmin() {
+  currentRole = 'admin';
+  setTeamCount(2);
+  if (location.hash !== '#admin') history.pushState(null, '', '#admin');
+  showScreen('adminScreen');
+}
+function setTeamCount(n) {
+  teamCount = n;
+  document.querySelectorAll('.team-count-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i + 2 === n);
+  });
+  const container = document.getElementById('teamNamesContainer');
+  container.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const inp = document.createElement('input');
+    inp.className = 'team-input';
+    inp.placeholder = `اسم الفريق ${i + 1}`;
+    inp.id = `teamName_${i}`;
+    inp.value = `فريق ${i + 1}`;
+    container.appendChild(inp);
+  }
+}
+
+async function createSession() {
+  const teams = [];
+  for (let i = 0; i < teamCount; i++) {
+    teams.push(document.getElementById(`teamName_${i}`).value.trim() || `فريق ${i + 1}`);
+  }
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  showLoader();
+  const sessionData = {
+    code,
+    teams: teams.reduce((acc, name, i) => { acc[i] = { name, joined: false, pressTime: null }; return acc; }, {}),
+    round: 'idle',   // idle | active | done
+    startTime: null,
+    createdAt: Date.now()
+  };
+  await fbSet(`sessions/${code}`, sessionData);
+  hideLoader();
+  currentSession = code;
+
+  document.getElementById('sessionCodeDisplay').textContent = code;
+  document.getElementById('setupCard').style.display  = 'none';
+  document.getElementById('sessionCard').style.display = '';
+  document.getElementById('teamsCard').style.display   = '';
+  document.getElementById('roundControls').style.display = 'flex';
+
+  renderTeamsStatus(sessionData.teams, 'idle');
+  startAdminPolling();
+}
+
+function startAdminPolling() {
+  adminPollInterval = setInterval(async () => {
+    const data = await fbGet(`sessions/${currentSession}`);
+    if (!data) return;
+    renderTeamsStatus(data.teams, data.round);
+    updateStatusBadge(data.round);
+    if (data.round === 'active') {
+      document.getElementById('startRoundBtn').style.display = 'none';
+      document.getElementById('stopRoundBtn').style.display  = '';
+    }
+    if (data.round === 'done') {
+      document.getElementById('startRoundBtn').style.display = 'none';
+      document.getElementById('stopRoundBtn').style.display  = '';
+    }
+    if (data.round === 'idle') {
+      document.getElementById('startRoundBtn').style.display = '';
+      document.getElementById('stopRoundBtn').style.display  = 'none';
+    }
+  }, 1000);
+}
+
+function updateStatusBadge(round) {
+  const el = document.getElementById('statusBadge');
+  if (round === 'idle')   { el.className = 'status-badge badge-idle'; el.textContent = '⏸ في الانتظار'; }
+  if (round === 'active') { el.className = 'status-badge badge-live'; el.textContent = '🔴 جارية'; }
+  if (round === 'done')   { el.className = 'status-badge badge-done'; el.textContent = '✅ انتهت'; }
+}
+
+function renderTeamsStatus(teams, round) {
+  const list = document.getElementById('teamsStatusList');
+  const entries = Object.values(teams).map((t, i) => ({ ...t, idx: i }));
+
+  // sort by press time if done
+  if (round === 'done' || round === 'active') {
+    entries.sort((a, b) => {
+      if (a.pressTime && b.pressTime) return a.pressTime - b.pressTime;
+      if (a.pressTime) return -1;
+      if (b.pressTime) return 1;
+      return a.idx - b.idx;
+    });
+  }
+
+  const firstTime = entries.find(e => e.pressTime)?.pressTime || null;
+
+  list.innerHTML = entries.map((t, rank) => {
+    const dot = `<div class="waiting-dot ${t.joined ? 'pressed' : ''}"></div>`;
+    let timeStr = '';
+    let diffStr = '';
+    if (t.pressTime) {
+      timeStr = `<span class="press-time">${new Date(t.pressTime).toLocaleTimeString('ar-EG', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'})}</span>`;
+      const diff = t.pressTime - firstTime;
+      diffStr = diff === 0
+        ? `<span class="diff-badge" style="border-color:var(--accent);color:var(--accent)">🥇 الأول</span>`
+        : `<span class="diff-badge">+${diff}ms</span>`;
+    }
+    const isWinner = round !== 'idle' && t.pressTime && t.pressTime === firstTime;
+    return `<div class="result-item ${isWinner ? 'winner' : ''}">
+      ${dot}
+      <div class="team-name-res">${t.name}</div>
+      ${timeStr}
+      ${diffStr}
+    </div>`;
+  }).join('');
+}
+
+async function startRound() {
+  await fbPatch(`sessions/${currentSession}`, { round: 'active', startTime: Date.now() });
+  // clear previous press times
+  const data = await fbGet(`sessions/${currentSession}/teams`);
+  if (data) {
+    const patch = {};
+    Object.keys(data).forEach(k => { patch[`${k}/pressTime`] = null; });
+    await fbPatch(`sessions/${currentSession}/teams`, patch);
+  }
+}
+
+async function resetRound() {
+  await fbPatch(`sessions/${currentSession}`, { round: 'idle', startTime: null });
+  const data = await fbGet(`sessions/${currentSession}/teams`);
+  if (data) {
+    const patch = {};
+    Object.keys(data).forEach(k => { patch[`${k}/pressTime`] = null; });
+    await fbPatch(`sessions/${currentSession}/teams`, patch);
+  }
+}
+
+async function endSession() {
+  clearIntervals();
+  await fbDelete(`sessions/${currentSession}`);
+  goHome();
+}
+
+/* ──────────────────────────────────────────
+   TEAM — join
+──────────────────────────────────────────── */
+function showTeamJoin() {
+  currentRole = 'team';
+  if (location.hash !== '#team') history.pushState(null, '', '#team');
+  showScreen('teamScreen');
+}
+
+async function joinSession() {
+  const code = document.getElementById('codeInput').value.trim();
+  if (code.length !== 4) { showModal('⚠️', 'كود غلط', 'الكود لازم يكون 4 أرقام'); return; }
+  showLoader();
+  const data = await fbGet(`sessions/${code}`);
+  hideLoader();
+  if (!data) { showModal('❌', 'جلسة مش موجودة', 'تأكد من الكود وحاول تاني'); return; }
+  currentSession = code;
+
+  // build team select buttons
+  const list = document.getElementById('teamSelectList');
+  list.innerHTML = Object.values(data.teams).map((t, i) =>
+    `<button class="team-select-btn" onclick="selectTeam(${i}, this)">${t.name}</button>`
+  ).join('');
+
+  document.getElementById('joinStep').style.display       = 'none';
+  document.getElementById('teamSelectStep').style.display  = '';
+}
+
+function selectTeam(idx, btn) {
+  document.querySelectorAll('.team-select-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentTeamIndex = idx;
+}
+
+async function confirmTeam() {
+  if (currentTeamIndex === null) { showModal('⚠️', 'اختر فريق', 'لازم تختار فريقك الأول'); return; }
+  const data = await fbGet(`sessions/${currentSession}/teams/${currentTeamIndex}`);
+  const teamName = data?.name || `فريق ${currentTeamIndex + 1}`;
+  document.getElementById('teamHeaderName').textContent = teamName;
+
+  // mark joined
+  await fbPatch(`sessions/${currentSession}/teams/${currentTeamIndex}`, { joined: true });
+
+  document.getElementById('teamSelectStep').style.display = 'none';
+  document.getElementById('buzzerStep').style.display      = '';
+
+  startTeamPolling();
+}
+
+function startTeamPolling() {
+  let lastRound = null;
+  teamPollInterval = setInterval(async () => {
+    const data = await fbGet(`sessions/${currentSession}`);
+    if (!data) { clearIntervals(); showModal('⚡', 'انتهت الجلسة', 'الأدمن أنهى الجلسة'); goHome(); return; }
+
+    const round = data.round;
+    const btn   = document.getElementById('buzzerBtn');
+    const status = document.getElementById('buzzerStatus');
+
+    if (round === 'idle') {
+      if (alreadyPressed) { alreadyPressed = false; }
+      btn.disabled = true;
+      btn.className = 'buzzer-btn';
+      btn.textContent = 'اضغط!';
+      status.textContent = 'في الانتظار...\nالأدمن لسه ماجاش بدأ الجولة';
+      document.getElementById('buzzerResult').classList.remove('show');
+    }
+
+    if (round === 'active' && !alreadyPressed) {
+      btn.disabled = false;
+      btn.className = 'buzzer-btn ready';
+      btn.textContent = 'اضغط الآن!';
+      status.textContent = '⚡ الجولة جارية — اضغط بسرعة!';
+    }
+
+    if (round === 'done' || (round === 'active' && alreadyPressed)) {
+      const myPress = data.teams[currentTeamIndex]?.pressTime;
+      // find winner
+      const allTimes = Object.values(data.teams)
+        .map(t => t.pressTime).filter(Boolean);
+      const first = allTimes.length ? Math.min(...allTimes) : null;
+
+      if (myPress && first) {
+        const diff = myPress - first;
+        const result = document.getElementById('buzzerResult');
+        if (diff === 0) {
+          btn.className = 'buzzer-btn done-btn';
+          btn.textContent = '🥇';
+          result.textContent = '🎉 أنت الأول!';
+          result.style.color = 'var(--accent)';
+          if (lastRound !== round) launchConfetti();
+        } else {
+          btn.className = 'buzzer-btn done-btn';
+          btn.textContent = `+${diff}ms`;
+          result.textContent = `تأخرت بـ ${diff} ميللي ثانية`;
+          result.style.color = 'var(--muted)';
+        }
+        result.classList.add('show');
+      } else if (!myPress) {
+        status.textContent = 'لم تضغط في هذه الجولة';
+        btn.className = 'buzzer-btn done-btn';
+        btn.disabled = true;
+        btn.textContent = '⏱';
+      }
+    }
+    lastRound = round;
+  }, 500);
+}
+
+async function pressBuzzer() {
+  if (alreadyPressed) return;
+  const btn = document.getElementById('buzzerBtn');
+  if (btn.disabled) return;
+
+  // check round still active
+  const data = await fbGet(`sessions/${currentSession}`);
+  if (!data || data.round !== 'active') return;
+
+  const pressTime = Date.now();
+  alreadyPressed = true;
+  btn.classList.add('pressed-anim');
+  setTimeout(() => btn.classList.remove('pressed-anim'), 120);
+  btn.disabled = true;
+
+  await fbPatch(`sessions/${currentSession}/teams/${currentTeamIndex}`, { pressTime });
+}
+
+/* ──────────────────────────────────────────
+   Confetti
+──────────────────────────────────────────── */
+function launchConfetti() {
+  const colors = ['#f0c040','#e05a2b','#3ddc84','#ff4f5e','#fff'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left:${Math.random()*100}vw;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${6+Math.random()*6}px;
+      height:${10+Math.random()*8}px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-duration:${1.5+Math.random()*2}s;
+      animation-delay:${Math.random()*0.8}s;
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+</script>
+</body>
+</html>
